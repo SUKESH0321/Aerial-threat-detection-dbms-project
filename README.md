@@ -1,4 +1,4 @@
-# drone-bombing
+# Aerial Threat Detection
 # 🚀 Threat Intelligence System (DBMS Project)
 
 ## 🎯 Overview
