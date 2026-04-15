@@ -1,70 +1,57 @@
-def assess_threat(conn, obj_id):
-    conn.execute("""
-    INSERT INTO Threat_Assessment(object_id, threat_level, priority_score)
-    SELECT object_id,
-        CASE
-            WHEN type = 'Missile' AND speed > 900 THEN 'CRITICAL'
-            WHEN speed > 800 AND altitude < 2000 THEN 'HIGH'
-            WHEN speed > 400 THEN 'MEDIUM'
-            ELSE 'LOW'
-        END,
-        CASE
-            WHEN type = 'Missile' THEN 100
-            WHEN speed > 800 THEN 80
-            WHEN speed > 400 THEN 50
-            ELSE 20
-        END
-    FROM Aerial_Objects
-    WHERE object_id = ?
-    """, (obj_id,))
-    conn.commit()
-def setup_db():
+from flask import Flask, render_template, request, redirect
+import sqlite3
+
+app = Flask(__name__)
+
+
+def get_conn():
+    return sqlite3.connect("database.db")
+
+
+def setup_database():
     conn = sqlite3.connect("database.db")
     cur = conn.cursor()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS Aerial_Objects (
-        object_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT,
-        speed INTEGER,
-        altitude INTEGER,
-        detected_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS Threat_Assessment (
-        assessment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        object_id INTEGER,
-        threat_level TEXT,
-        priority_score INTEGER,
-        assessed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS Alerts (
-        alert_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        object_id INTEGER,
-        message TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    # Trigger
-    cur.execute("""
-    CREATE TRIGGER IF NOT EXISTS threat_alert_trigger
-    AFTER INSERT ON Threat_Assessment
-    BEGIN
-        INSERT INTO Alerts(object_id, message)
-        SELECT NEW.object_id,
-            CASE
-                WHEN NEW.threat_level = 'CRITICAL' THEN '🚨 CRITICAL THREAT 🚨'
-                WHEN NEW.threat_level = 'HIGH' THEN '⚠️ High threat detected'
-                ELSE 'Monitor'
-            END;
-    END;
-    """)
+    with open("db/setup.sql", "r", encoding="utf-8") as f:
+        cur.executescript(f.read())
 
     conn.commit()
     conn.close()
+
+
+@app.route("/")
+def index():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    alerts = cur.execute("SELECT * FROM Alerts ORDER BY created_at DESC").fetchall()
+    threats = cur.execute("SELECT * FROM Threat_Assessment ORDER BY assessed_at DESC").fetchall()
+
+    conn.close()
+
+    return render_template("index.html", alerts=alerts, threats=threats)
+
+
+@app.route("/add", methods=["POST"])
+def add():
+    obj_type = request.form["type"]
+    speed = int(request.form["speed"])
+    altitude = int(request.form["altitude"])
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+    INSERT INTO Aerial_Objects (type, speed, altitude)
+    VALUES (?, ?, ?)
+    """, (obj_type, speed, altitude))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/")
+
+
+if __name__ == "__main__":
+    setup_database()
+    app.run(debug=True)

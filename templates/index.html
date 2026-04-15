@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Threat Detection System</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 40px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        h1 {
+            color: #f87171;
+        }
+
+        input, button {
+            margin: 5px;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+        }
+
+        input {
+            background: #1e293b;
+            color: white;
+        }
+
+        button {
+            background: #ef4444;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #dc2626;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            background: #1e293b;
+        }
+
+        td, th {
+            border: 1px solid #334155;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #334155;
+        }
+
+        .critical { color: red; font-weight: bold; }
+        .high { color: orange; }
+        .medium { color: yellow; }
+        .low { color: lightgreen; }
+    </style>
+</head>
+
+<body>
+
+<h1>🚨 Threat Detection Dashboard</h1>
+
+<!-- FORM -->
+<h2>Add Aerial Object</h2>
+<form method="POST" action="/add">
+    <input name="type" placeholder="Type (Missile/Drone/Aircraft)" required>
+    <input name="speed" type="number" placeholder="Speed" required>
+    <input name="altitude" type="number" placeholder="Altitude" required>
+    <button type="submit">Add Object</button>
+</form>
+
+<!-- ALERTS -->
+<h2>🚨 Alerts</h2>
+<table>
+<tr>
+    <th>ID</th>
+    <th>Object ID</th>
+    <th>Message</th>
+    <th>Time</th>
+</tr>
+
+{% for a in alerts %}
+<tr>
+    <td>{{a[0]}}</td>
+    <td>{{a[1]}}</td>
+    <td>{{a[2]}}</td>
+    <td>{{a[3]}}</td>
+</tr>
+{% endfor %}
+
+</table>
+
+<!-- THREATS -->
+<h2>📊 Threat Assessments</h2>
+<table>
+<tr>
+    <th>ID</th>
+    <th>Object ID</th>
+    <th>Threat Level</th>
+    <th>Priority</th>
+</tr>
+
+{% for t in threats %}
+<tr>
+    <td>{{t[0]}}</td>
+    <td>{{t[1]}}</td>
+
+    <td class="
+        {% if t[2]=='CRITICAL' %}critical
+        {% elif t[2]=='HIGH' %}high
+        {% elif t[2]=='MEDIUM' %}medium
+        {% else %}low
+        {% endif %}
+    ">
+        {{t[2]}}
+    </td>
+
+    <td>{{t[3]}}</td>
+</tr>
+{% endfor %}
+
+</table>
+
+</body>
+</html>
